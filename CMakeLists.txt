@@ -11,8 +11,13 @@ endif()
 find_package(smg REQUIRED)
 include(cmake/Deps.cmake)
 
+# everything that needs no GL, so unit tests link without a window
+add_library(smgk_core STATIC src/Wire.cpp src/Ansi.cpp src/Feed.cpp)
+target_include_directories(smgk_core PUBLIC src)
+target_link_libraries(smgk_core PUBLIC smgk_deps)
+
 add_executable(smgk-view src/main.cpp)
-target_link_libraries(smgk-view PRIVATE smg::smg smgk_deps)
+target_link_libraries(smgk-view PRIVATE smg::smg smgk_core)
 
 enable_testing()
 add_subdirectory(test)

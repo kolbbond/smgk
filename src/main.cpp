@@ -6,8 +6,8 @@
 int main(int argc, char** argv) {
     smg::GuiConfig config;
     config.title = "smgk";
-    config.size = { 900, 1000 };
-    smg::GuiBase gui({ argc, argv }, config);
+    config.size = {900, 1000};
+    smg::GuiBase gui({argc, argv}, config);
 
     gui.add_callback([]() {
         const ImGuiViewport* viewport = ImGui::GetMainViewport();

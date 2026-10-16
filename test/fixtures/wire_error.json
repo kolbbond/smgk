@@ -1,0 +1,9 @@
+[
+ "kernel.4c9f3fec-bc5c-4836-9a69-17b3f23518a5.error",
+ "<IDS|MSG>",
+ "",
+ "{\"msg_id\": \"9658db1e-c1701127e2d79e159cfc9253_150251_15\", \"msg_type\": \"error\", \"username\": \"kolbbond\", \"session\": \"9658db1e-c1701127e2d79e159cfc9253\", \"date\": \"2026-10-16T19:05:39.085767Z\", \"version\": \"5.4\"}",
+ "{\"msg_id\": \"041a4b90-7d0e5ef22575efd7454ef514_150248_1\", \"msg_type\": \"execute_request\", \"username\": \"kolbbond\", \"session\": \"041a4b90-7d0e5ef22575efd7454ef514\", \"date\": \"2026-10-16T19:05:39.037611Z\", \"version\": \"5.4\"}",
+ "{}",
+ "{\"traceback\": [\"\\u001b[0;31m---------------------------------------------------------------------------\\u001b[0m\", \"\\u001b[0;31mZeroDivisionError\\u001b[0m                         Traceback (most recent call last)\", \"\\u001b[0;32m/tmp/ipykernel_150251/2354412189.py\\u001b[0m in \\u001b[0;36m<module>\\u001b[0;34m\\u001b[0m\\n\\u001b[0;32m----> 1\\u001b[0;31m \\u001b[0;36m1\\u001b[0m\\u001b[0;34m/\\u001b[0m\\u001b[0;36m0\\u001b[0m\\u001b[0;34m\\u001b[0m\\u001b[0;34m\\u001b[0m\\u001b[0m\\n\\u001b[0m\", \"\\u001b[0;31mZeroDivisionError\\u001b[0m: division by zero\"], \"ename\": \"ZeroDivisionError\", \"evalue\": \"division by zero\"}"
+]

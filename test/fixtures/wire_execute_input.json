@@ -1,0 +1,9 @@
+[
+ "kernel.4c9f3fec-bc5c-4836-9a69-17b3f23518a5.execute_input",
+ "<IDS|MSG>",
+ "",
+ "{\"msg_id\": \"9658db1e-c1701127e2d79e159cfc9253_150251_9\", \"msg_type\": \"execute_input\", \"username\": \"kolbbond\", \"session\": \"9658db1e-c1701127e2d79e159cfc9253\", \"date\": \"2026-10-16T19:05:39.020633Z\", \"version\": \"5.4\"}",
+ "{\"msg_id\": \"041a4b90-7d0e5ef22575efd7454ef514_150248_0\", \"msg_type\": \"execute_request\", \"username\": \"kolbbond\", \"session\": \"041a4b90-7d0e5ef22575efd7454ef514\", \"date\": \"2026-10-16T19:05:39.012996Z\", \"version\": \"5.4\"}",
+ "{}",
+ "{\"code\": \"print(\\\"hi\\\")\", \"execution_count\": 1}"
+]
