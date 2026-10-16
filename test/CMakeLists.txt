@@ -11,6 +11,9 @@ endfunction()
 add_test(NAME view_starts COMMAND smgk-view --smg-hidden --smg-frames 2)
 set_tests_properties(view_starts PROPERTIES LABELS gui)
 
-foreach(t wire ansi feed session iopub)
+foreach(t wire ansi feed session iopub png)
     smgk_add_test(test_${t} test_${t}.cpp unit)
 endforeach()
+
+add_test(NAME test_view COMMAND python3 -m pytest -q -p no:cacheprovider ${CMAKE_CURRENT_SOURCE_DIR}/test_view.py)
+set_tests_properties(test_view PROPERTIES LABELS gui ENVIRONMENT "SMGK_VIEW=$<TARGET_FILE:smgk-view>")
