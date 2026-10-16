@@ -106,6 +106,9 @@ def start(root: Path, generation: int = 1, avoid_notebook: Optional[str] = None)
     sd = root / STATE_DIR
     st = State.load(sd)
     if st and pid_alive(st.kernel_pid) and _responds(root, st):
+        if not pid_alive(st.recorder_pid):
+            st.recorder_pid = _start_recorder(root)
+            st.save(sd)
         return st
 
     py = kernel_python()
@@ -128,7 +131,27 @@ def start(root: Path, generation: int = 1, avoid_notebook: Optional[str] = None)
         proc.kill()
         raise SmgkError(f"smgk: kernel failed to start, see {sd / 'kernel.log'}")
     st.save(sd)
+    st.recorder_pid = _start_recorder(root)
+    st.save(sd)
     return st
+
+
+def _start_recorder(root: Path, timeout: float = 10) -> int:
+    sd = root / STATE_DIR
+    ready = sd / "recorder.ready"
+    ready.unlink(missing_ok=True)
+    with open(sd / "recorder.log", "ab") as log:
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "smgk.recorder", str(root)],
+            cwd=root, stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True,
+        )
+    deadline = time.time() + timeout
+    while not ready.exists():
+        if time.time() > deadline or proc.poll() is not None:
+            proc.kill()
+            raise SmgkError(f"smgk: recorder failed to start, see {sd / 'recorder.log'}")
+        time.sleep(0.05)
+    return proc.pid
 
 
 def _terminate(pid: Optional[int], timeout: float = 5) -> None:
