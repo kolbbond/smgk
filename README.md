@@ -53,6 +53,18 @@ In `after/plugin/slime.lua` (nvim-config):
 Click a plot to open it full size; mouse wheel zooms, Esc closes. The feed follows new output
 unless you've scrolled up. The dot in the top bar is the kernel state (green idle, amber busy).
 
+## Workspace panel
+
+MATLAB-style variable list on the right of the viewer (`Ctrl+W` toggles it): name, type,
+size (`(1000, 3) float64`, `500×12` for DataFrames, lengths for containers) and a short value
+(scalars, short strings, min/max for small numeric arrays). Click a header to sort, type to
+filter, hover a row to see it whole. It refreshes after each cell; `push`/`note` don't touch it.
+
+The recorder asks the kernel for this summary with a silent request after each cell and writes
+`.smgk/workspace.json`. It never calls `repr()` on objects it doesn't know (only builtins,
+numpy, pandas, and array-likes with `shape`/`dtype`), hides `_names`, modules, functions,
+classes and IPython's own names, and lists at most 300 variables.
+
 ## Tests
 
 ```bash

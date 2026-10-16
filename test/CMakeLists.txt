@@ -11,7 +11,7 @@ endfunction()
 add_test(NAME view_starts COMMAND smgk-view --smg-hidden --smg-frames 2)
 set_tests_properties(view_starts PROPERTIES LABELS gui)
 
-foreach(t wire ansi feed session iopub png)
+foreach(t wire ansi feed session iopub png workspace)
     smgk_add_test(test_${t} test_${t}.cpp unit)
 endforeach()
 

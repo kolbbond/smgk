@@ -1,6 +1,7 @@
 // smgk-view: watches a project's Jupyter kernel and shows its cells, text and plots.
 //   smgk-view [dir]     dir (default: cwd) is anywhere inside a project started with `smgk start`
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
@@ -15,6 +16,7 @@
 #include "FeedView.hh"
 #include "Iopub.hh"
 #include "Session.hh"
+#include "WorkspaceView.hh"
 
 namespace fs = std::filesystem;
 using Clock = std::chrono::steady_clock;
@@ -35,6 +37,7 @@ class App {
 
     [[nodiscard]] std::size_t cells() const { return _feed.cells().size(); }
     [[nodiscard]] int generation() const { return _state ? _state->generation : 0; }
+    [[nodiscard]] std::size_t vars() const { return _workspace.size(); }
 
     // also runs once up front, so the first frame already shows history
     void refresh() {
@@ -47,6 +50,7 @@ class App {
         }
         // a new kernel (restart, or a crash's successor) means new ports and a new notebook
         if(!_state || st->generation != _state->generation || st->kernel_pid != _state->kernel_pid) connect(*st);
+        read_workspace(*dir / "workspace.json");
     }
 
   private:
@@ -54,7 +58,21 @@ class App {
         _iopub.reset();
         _feed.reset();
         _view.clear();
+        _workspace.clear();
+        _workspace_mtime = {};
         _state.reset();
+    }
+
+    // the recorder rewrites this after each cell; one left by a previous kernel is ignored
+    void read_workspace(const fs::path& file) {
+        std::error_code ec;
+        const auto mtime = fs::last_write_time(file, ec);
+        if(ec || mtime == _workspace_mtime) return;
+        _workspace_mtime = mtime;
+        std::ifstream in(file);
+        auto ws = smgk::parse_workspace(nlohmann::json::parse(in, nullptr, false));
+        if(ws && _state && ws->generation == _state->generation) _workspace.set(std::move(ws->vars));
+        else _workspace.clear();
     }
 
     void connect(const smgk::SessionState& st) {
@@ -86,7 +104,20 @@ class App {
             ImGui::TextDisabled("%s", msg);
         } else {
             status_bar();
-            _view.draw(_feed);
+            if(ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_W)) _show_workspace = !_show_workspace;
+            if(_show_workspace) {
+                const float width = std::max(260.0f, ImGui::GetContentRegionAvail().x * 0.34f);
+                ImGui::BeginChild("##main", {ImGui::GetContentRegionAvail().x - width - ImGui::GetStyle().ItemSpacing.x, 0});
+                _view.draw(_feed);
+                ImGui::EndChild();
+                ImGui::SameLine();
+                ImGui::BeginChild("##workspace", {0, 0}, ImGuiChildFlags_Borders);
+                ImGui::TextDisabled("Workspace  (Ctrl+W)");
+                _workspace.draw();
+                ImGui::EndChild();
+            } else {
+                _view.draw(_feed);
+            }
         }
         ImGui::End();
     }
@@ -110,6 +141,9 @@ class App {
     std::unique_ptr<smgk::IopubClient> _iopub;
     smgk::Feed _feed;
     smgk::FeedView _view;
+    smgk::WorkspaceView _workspace;
+    fs::file_time_type _workspace_mtime{};
+    bool _show_workspace = true;
     Clock::time_point _last_check{};
 };
 
@@ -121,7 +155,7 @@ int main(int argc, char** argv) {
 
     smg::GuiConfig config;
     config.title = "smgk";
-    config.size = {900, 1000};
+    config.size = {1300, 1000}; // feed plus the workspace panel
     smg::GuiBase gui({argc, argv}, config);
     // ImGui would otherwise drop imgui.ini into the cwd, i.e. the user's project
     ImGui::GetIO().IniFilename = nullptr;
@@ -135,6 +169,6 @@ int main(int argc, char** argv) {
 
     while(gui.mainLoopIteration()) {}
     // one line for scripts and tests to check what was shown
-    std::printf("smgk-view: cells=%zu generation=%d\n", app.cells(), app.generation());
+    std::printf("smgk-view: cells=%zu generation=%d vars=%zu\n", app.cells(), app.generation(), app.vars());
     return 0;
 }

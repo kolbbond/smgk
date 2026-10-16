@@ -138,3 +138,31 @@ def test_view_writes_no_ini(tmp_path):
     r = run_view(tmp_path, 10, cwd=tmp_path)
     assert r.returncode == 0, r.stderr
     assert not (tmp_path / "imgui.ini").exists()
+
+
+def summary_vars(stdout: str) -> int:
+    m = re.search(r"vars=(\d+)", stdout)
+    assert m, f"no vars in output: {stdout!r}"
+    return int(m.group(1))
+
+
+def test_view_workspace_panel(tmp_path):
+    shutil.copy(FIXTURES / "history.ipynb", tmp_path / "h.ipynb")
+    make_session(tmp_path, "h.ipynb")
+    rows = [{"name": "a", "type": "ndarray", "size": "(10, 3) float64", "value": "min 0 … max 1"},
+            {"name": "n", "type": "int", "size": "", "value": "5"},
+            {"name": "df", "type": "DataFrame", "size": "500×2", "value": ""}]
+    (tmp_path / ".smgk" / "workspace.json").write_text(json.dumps({"generation": 1, "vars": rows}))
+    shot = tmp_path / "ws.png"
+    r = run_view(tmp_path, 30, "--smg-screenshot", str(shot))
+    assert r.returncode == 0, r.stderr
+    assert summary_vars(r.stdout) == 3
+
+
+def test_view_ignores_stale_workspace(tmp_path):
+    # left over from the previous kernel: must not show as the new kernel's variables
+    shutil.copy(FIXTURES / "history.ipynb", tmp_path / "h.ipynb")
+    make_session(tmp_path, "h.ipynb", generation=2)
+    (tmp_path / ".smgk" / "workspace.json").write_text(json.dumps({"generation": 1, "vars": [{"name": "old", "type": "int", "size": "", "value": "1"}]}))
+    r = run_view(tmp_path, 10)
+    assert summary_vars(r.stdout) == 0

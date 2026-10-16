@@ -3,9 +3,11 @@
 Run as `python -m smgk.recorder <root>`; started and stopped by smgk.kernel.
 """
 
+import json
 import os
 import queue
 import sys
+import time
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -14,6 +16,7 @@ from nbformat import v4
 
 from .kernel import State, connect
 from .project import STATE_DIR
+from .workspace import parse_reply, probe_expression
 
 OUTPUT_TYPES = ("stream", "execute_result", "display_data", "error")
 
@@ -92,6 +95,12 @@ def _write(nb: nbformat.NotebookNode, path: Path) -> None:
     os.replace(tmp, path)
 
 
+def _write_json(obj: dict, path: Path) -> None:
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(obj))
+    os.replace(tmp, path)
+
+
 def run(root: Path) -> int:
     sd = root / STATE_DIR
     st = State.load(sd)
@@ -101,6 +110,14 @@ def run(root: Path) -> int:
     builder = NotebookBuilder(nbformat.read(str(path), as_version=4) if path.exists() else None)
     kc = connect(root)
 
+    ws_expr = probe_expression()
+    # cells whose finish should refresh the workspace: only real executes (execute_input seen),
+    # so push/note and the workspace probe itself (all silent) never retrigger it
+    executed = set()
+    ws_pending: Optional[str] = None
+    ws_stale = True  # initial snapshot, so the viewer shows an empty workspace right away
+    next_alive_check = time.time() + 1
+
     # IOPub subscriptions are live only once a message arrives; our own kernel_info proves it
     probe = kc.kernel_info()
     ready = False
@@ -108,18 +125,41 @@ def run(root: Path) -> int:
     try:
         while True:
             try:
-                msg = kc.get_iopub_msg(timeout=1)
+                while True:
+                    reply = kc.get_shell_msg(timeout=0)
+                    if ws_pending and reply["parent_header"].get("msg_id") == ws_pending:
+                        ws_pending = None
+                        rows = parse_reply(reply)
+                        if rows is not None:
+                            _write_json({"generation": st.generation, "vars": rows}, sd / "workspace.json")
             except queue.Empty:
-                if not st.kernel_alive():
-                    return 0
+                pass
+            if ready and ws_stale and ws_pending is None:
+                ws_pending = kc.execute("", silent=True, store_history=False, user_expressions={"ws": ws_expr})
+                ws_stale = False
+
+            try:
+                msg = kc.get_iopub_msg(timeout=0.2)
+            except queue.Empty:
+                if time.time() > next_alive_check:
+                    if not st.kernel_alive():
+                        return 0
+                    next_alive_check = time.time() + 1
                 continue
-            if not ready and msg["parent_header"].get("msg_id") == probe:
+            parent = msg["parent_header"].get("msg_id")
+            if not ready and parent == probe:
                 (sd / "recorder.ready").touch()
                 ready = True
+            if msg["msg_type"] == "execute_input":
+                executed.add(parent)
             dirty |= builder.apply(msg)
-            if dirty and msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
-                _write(builder.notebook(), path)
-                dirty = False
+            if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
+                if dirty:
+                    _write(builder.notebook(), path)
+                    dirty = False
+                if parent in executed:
+                    executed.discard(parent)
+                    ws_stale = True
     finally:
         if dirty:
             _write(builder.notebook(), path)
