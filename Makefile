@@ -19,6 +19,7 @@ test: build
 
 install: build
 	cmake --install $(BUILD_DIR)
+	python3 -m pip install --user -q -e python
 
 clean:
 	rm -rf $(BUILD_DIR)

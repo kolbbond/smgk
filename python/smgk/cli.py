@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import helpers, kernel
+from . import helpers, kernel, viewer
 from .project import find_root
 
 
@@ -14,6 +14,9 @@ def main(argv=None) -> int:
     for name in ("start", "stop", "restart", "status"):
         sp = sub.add_parser(name)
         sp.add_argument("--dir", type=Path, default=Path.cwd())
+    sp = sub.add_parser("view", help="open the smgk-view window for this project")
+    sp.add_argument("--dir", type=Path, default=Path.cwd())
+    sp.add_argument("extra", nargs=argparse.REMAINDER, help="passed to smgk-view (after --)")
     sp = sub.add_parser("push", help="show an image file in the feed")
     sp.add_argument("file", type=Path)
     sp = sub.add_parser("note", help="add a markdown note to the feed")
@@ -40,6 +43,8 @@ def main(argv=None) -> int:
         if args.cmd in ("start", "restart"):
             st = getattr(kernel, args.cmd)(root)
             print(root / st.connection_file)
+        elif args.cmd == "view":
+            viewer.launch(root, [a for a in args.extra if a != "--"])
         elif args.cmd == "stop":
             kernel.stop(root)
         elif args.cmd == "status":
