@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import kernel
+from . import helpers, kernel
 from .project import find_root
 
 
@@ -14,9 +14,28 @@ def main(argv=None) -> int:
     for name in ("start", "stop", "restart", "status"):
         sp = sub.add_parser(name)
         sp.add_argument("--dir", type=Path, default=Path.cwd())
+    sp = sub.add_parser("push", help="show an image file in the feed")
+    sp.add_argument("file", type=Path)
+    sp = sub.add_parser("note", help="add a markdown note to the feed")
+    sp.add_argument("text")
+    sp = sub.add_parser("run", help="run a python file or -c code on the kernel")
+    g = sp.add_mutually_exclusive_group(required=True)
+    g.add_argument("file", type=Path, nargs="?")
+    g.add_argument("-c", dest="code")
     args = p.parse_args(argv)
 
     try:
+        if args.cmd == "push":
+            helpers.push(Path.cwd(), args.file)
+            return 0
+        if args.cmd == "note":
+            helpers.note(Path.cwd(), args.text)
+            return 0
+        if args.cmd == "run":
+            if args.file and not args.file.is_file():
+                raise kernel.SmgkError(f"smgk: no such file: {args.file.resolve()}")
+            return 0 if helpers.run(Path.cwd(), args.code if args.code is not None else args.file.read_text()) else 1
+
         root = find_root(args.dir)
         if args.cmd in ("start", "restart"):
             st = getattr(kernel, args.cmd)(root)

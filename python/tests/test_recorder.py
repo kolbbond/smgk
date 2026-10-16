@@ -1,12 +1,10 @@
 import base64
-import time
-
 import nbformat
 
 from smgk import kernel
 from smgk.recorder import NotebookBuilder
 
-from msgs import PNG_4x4_RED, display, execute_input, idle, stream
+from msgs import PNG_4x4_RED, display, execute_input, idle, stream, wait_cells
 
 
 def build(*msgs):
@@ -62,17 +60,6 @@ def test_builder_resumes_existing_notebook():
     assert nb.cells[0].outputs[0].text == "a\nb\n"
 
 
-def _wait_cells(path, n, timeout=10):
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        if path.exists():
-            nb = nbformat.read(path, as_version=4)
-            if len(nb.cells) >= n:
-                return nb
-        time.sleep(0.1)
-    raise AssertionError(f"notebook {path} never reached {n} cells")
-
-
 def test_recorder_live(project):
     st = kernel.start(project)
     assert kernel.pid_alive(st.recorder_pid)
@@ -82,7 +69,7 @@ def test_recorder_live(project):
         kc.execute_interactive("import matplotlib.pyplot as plt\nplt.plot([1, 3, 2])\nplt.show()", timeout=30)
     finally:
         kc.stop_channels()
-    nb = _wait_cells(project / st.notebook, 2)
+    nb = wait_cells(project / st.notebook, 2)
     nbformat.validate(nb)
     assert nb.cells[0].source == 'print("hi")' and nb.cells[0].outputs[0].text == "hi\n"
     assert any("image/png" in o.get("data", {}) for o in nb.cells[1].outputs)
