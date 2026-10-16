@@ -1,0 +1,6 @@
+.superpowers/
+build/
+__pycache__/
+*.egg-info/
+.smgk/
+notebooks/
