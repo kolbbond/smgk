@@ -14,6 +14,7 @@ struct ConnInfo {
 
 struct SessionState {
     int generation = 0;
+    long kernel_pid = 0;
     std::filesystem::path root, connection_file, notebook;
 };
 

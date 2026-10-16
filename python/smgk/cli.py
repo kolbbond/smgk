@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from . import helpers, kernel, viewer
-from .project import find_root
+from .project import resolve_root
 
 
 def main(argv=None) -> int:
@@ -39,7 +39,7 @@ def main(argv=None) -> int:
                 raise kernel.SmgkError(f"smgk: no such file: {args.file.resolve()}")
             return 0 if helpers.run(Path.cwd(), args.code if args.code is not None else args.file.read_text()) else 1
 
-        root = find_root(args.dir)
+        root = resolve_root(args.dir)
         if args.cmd in ("start", "restart"):
             st = getattr(kernel, args.cmd)(root)
             print(root / st.connection_file)
@@ -55,7 +55,7 @@ def main(argv=None) -> int:
             print(f"generation {st.generation}  kernel pid {st.kernel_pid}  notebook {root / st.notebook}")
     except kernel.SmgkError as e:
         print(e.msg, file=sys.stderr)
-        return e.code
+        return e.status
     return 0
 
 

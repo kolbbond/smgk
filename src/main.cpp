@@ -45,7 +45,8 @@ class App {
             if(_state) disconnect();
             return;
         }
-        if(!_state || st->generation != _state->generation) connect(*st);
+        // a new kernel (restart, or a crash's successor) means new ports and a new notebook
+        if(!_state || st->generation != _state->generation || st->kernel_pid != _state->kernel_pid) connect(*st);
     }
 
   private:
@@ -66,6 +67,9 @@ class App {
         std::ifstream nb(st.notebook);
         if(nb) _feed.load_notebook(nlohmann::json::parse(nb, nullptr, false));
         _state = st;
+        // goes to .smgk/view.log; tests also sync on it
+        std::printf("smgk-view: connected generation=%d kernel_pid=%ld cells=%zu\n", st.generation, st.kernel_pid, _feed.cells().size());
+        std::fflush(stdout);
     }
 
     void draw() {
@@ -119,6 +123,8 @@ int main(int argc, char** argv) {
     config.title = "smgk";
     config.size = {900, 1000};
     smg::GuiBase gui({argc, argv}, config);
+    // ImGui would otherwise drop imgui.ini into the cwd, i.e. the user's project
+    ImGui::GetIO().IniFilename = nullptr;
 
     App app(start);
     app.refresh();

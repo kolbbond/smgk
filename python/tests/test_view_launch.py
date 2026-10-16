@@ -17,7 +17,7 @@ def test_view_launch_idempotent(project, monkeypatch):
     try:
         b = viewer.launch(project, ["--smg-hidden"])
         assert a == b
-        assert int((project / ".smgk" / "view.pid").read_text()) == a
+        assert int((project / ".smgk" / "view.pid").read_text().split()[0]) == a
     finally:
         os.kill(a, signal.SIGTERM)
 

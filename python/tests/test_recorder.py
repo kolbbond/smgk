@@ -62,7 +62,7 @@ def test_builder_resumes_existing_notebook():
 
 def test_recorder_live(project):
     st = kernel.start(project)
-    assert kernel.pid_alive(st.recorder_pid)
+    assert st.recorder_alive()
     kc = kernel.connect(project)
     try:
         kc.execute_interactive('print("hi")', timeout=10)
@@ -78,4 +78,4 @@ def test_recorder_live(project):
 def test_stop_ends_recorder(project):
     st = kernel.start(project)
     kernel.stop(project)
-    assert not kernel.pid_alive(st.recorder_pid)
+    assert not st.recorder_alive()

@@ -12,7 +12,7 @@ from typing import Dict, Optional
 import nbformat
 from nbformat import v4
 
-from .kernel import State, connect, pid_alive
+from .kernel import State, connect
 from .project import STATE_DIR
 
 OUTPUT_TYPES = ("stream", "execute_result", "display_data", "error")
@@ -110,7 +110,7 @@ def run(root: Path) -> int:
             try:
                 msg = kc.get_iopub_msg(timeout=1)
             except queue.Empty:
-                if not pid_alive(st.kernel_pid):
+                if not st.kernel_alive():
                     return 0
                 continue
             if not ready and msg["parent_header"].get("msg_id") == probe:

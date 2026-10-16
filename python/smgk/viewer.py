@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 from typing import List
 
-from .kernel import SmgkError, pid_alive
+from .kernel import SmgkError, alive, proc_start
 from .project import STATE_DIR
 
 
@@ -15,8 +15,8 @@ def launch(root: Path, extra: List[str]) -> int:
     sd = root / STATE_DIR
     pidfile = sd / "view.pid"
     try:
-        pid = int(pidfile.read_text())
-        if pid_alive(pid):
+        pid, start = (int(x) for x in pidfile.read_text().split())
+        if alive(pid, start):
             return pid
     except (OSError, ValueError):
         pass
@@ -28,5 +28,5 @@ def launch(root: Path, extra: List[str]) -> int:
     with open(sd / "view.log", "ab") as log:
         proc = subprocess.Popen([exe, str(root), *extra], cwd=root, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
                                 start_new_session=True)
-    pidfile.write_text(str(proc.pid))
+    pidfile.write_text(f"{proc.pid} {proc_start(proc.pid)}")
     return proc.pid

@@ -40,6 +40,7 @@ std::optional<SessionState> read_state(const fs::path& state_dir) {
     SessionState s;
     s.root = state_dir.parent_path();
     s.generation = j.value("generation", 0);
+    s.kernel_pid = j.value("kernel_pid", 0L);
     s.connection_file = s.root / j.value("connection_file", ".smgk/kernel.json");
     s.notebook = s.root / j.value("notebook", "");
     return s;
